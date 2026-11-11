@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>스마트 일반 계산기</title>
+    <!-- Tailwind CSS 로드 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Jua (제목용) & Noto Sans KR (본문/숫자용) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome 아이콘 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Noto Sans KR"', 'sans-serif'],
+                        display: ['"Jua"', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* 은은한 파스텔 블루 & 민트 그라데이션 배경 */
+        body {
+            background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 50%, #F0FDF4 100%);
+            min-height: 100vh;
+            user-select: none;
+        }
+        /* 버튼 클릭 시 부드럽게 눌리는 애니메이션 */
+        .calc-btn {
+            transition: all 0.1s ease-in-out;
+        }
+        .calc-btn:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body class="text-slate-800 flex flex-col items-center justify-center p-4">
+
+    <!-- 헤더 영역 -->
+    <header class="w-full max-w-md text-center mb-5">
+        <div class="inline-flex items-center justify-center bg-white px-3.5 py-1 rounded-full shadow-sm mb-2 border border-indigo-100">
+            <span class="text-xs font-bold text-indigo-600">✨ 자연수 · 소수 사칙연산 전용</span>
+        </div>
+        <h1 class="font-display text-3xl sm:text-4xl text-slate-900 tracking-wide flex items-center justify-center gap-2">
+            <i class="fa-solid fa-calculator text-indigo-600"></i>
+            스마트 일반 계산기
+        </h1>
+    </header>
+
+    <!-- 메인 계산기 카드 -->
+    <main class="w-full max-w-md bg-white rounded-3xl shadow-xl border border-slate-100 p-5 sm:p-6">
+        
+        <!-- 상단 보조 바: 계산 기록 보기 버튼 -->
+        <div class="flex justify-between items-center mb-3">
+            <span class="text-xs font-bold text-slate-500">기본 사칙연산 모드</span>
+            <button onclick="toggleHistory()" class="text-xs text-indigo-600 hover:text-indigo-800 font-bold flex items-center gap-1 bg-indigo-50 px-2.5 py-1 rounded-lg transition">
+                <i class="fa-solid fa-clock-rotate-left"></i> 계산 기록
+            </button>
+        </div>
+
+        <!-- 디스플레이 액정 -->
+        <div class="bg-slate-900 text-white p-4 sm:p-5 rounded-2xl mb-4 text-right shadow-inner relative overflow-hidden">
+            <!-- 이전 입력 수식 표시줄 -->
+            <div id="basic-expression" class="text-slate-400 text-sm sm:text-base h-6 overflow-x-auto whitespace-nowrap"></div>
+            <!-- 현재 입력/결과 숫자 -->
+            <div id="basic-display" class="text-3xl sm:text-4xl font-bold tracking-wider mt-1 overflow-x-auto whitespace-nowrap">0</div>
+        </div>
+
+        <!-- 계산 기록 드로어 (기본 숨김 상태) -->
+        <div id="history-box" class="hidden mb-4 bg-slate-50 p-3 rounded-2xl border border-slate-200 max-h-36 overflow-y-auto text-sm">
+            <div class="flex justify-between items-center mb-1.5 border-b border-slate-200 pb-1">
+                <span class="font-bold text-slate-700 text-xs">최근 계산 기록 (최대 10개)</span>
+                <button onclick="clearHistory()" class="text-xs text-rose-500 hover:underline font-medium">전체 지우기</button>
+            </div>
+            <ul id="history-list" class="space-y-1 text-slate-600 text-xs">
+                <li class="text-slate-400 text-center py-2">아직 계산 기록이 없어요.</li>
+            </ul>
+        </div>
+
+        <!-- 키패드 버튼 영역 -->
+        <div class="grid grid-cols-4 gap-2.5 sm:gap-3">
+            <!-- 1행: AC, 백스페이스, 나누기 -->
+            <button onclick="basicClear()" class="calc-btn col-span-2 bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold py-3.5 sm:py-4 rounded-2xl text-lg">
+                AC (지움)
+            </button>
+            <button onclick="basicBackspace()" class="calc-btn bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3.5 sm:py-4 rounded-2xl text-lg" aria-label="하나 지우기">
+                <i class="fa-solid fa-delete-left"></i>
+            </button>
+            <button onclick="basicAppend('/')" class="calc-btn bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-bold py-3.5 sm:py-4 rounded-2xl text-xl">
+                ÷
+            </button>
+
+            <!-- 2행: 7, 8, 9, 곱하기 -->
+            <button onclick="basicAppend('7')" class="calc-btn bg-slate-50 hover:bg-slate-100 border border-slate-200 font-bold py-3.5 sm:py-4 rounded-2xl text-xl">7</button>
+            <button onclick="basicAppend('8')" class="calc-btn bg-slate-50 hover:bg-slate-100 border border-slate-200 font-bold py-3.5 sm:py-4 rounded-2xl text-xl">8</button>
+            <button onclick="basicAppend('9')" class="calc-btn bg-slate-50 hover:bg-slate-100 border border-slate-200 font-bold py-3.5 sm:py-4 rounded-2xl text-xl">9</button>
+            <button onclick="basicAppend('*')" class="calc-btn bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-bold py-3.5 sm:py-4 rounded-2xl text-xl">
+                ×
+            </button>
+
+            <!-- 3행: 4, 5, 6, 빼기 -->
+            <button onclick="basicAppend('4')" class="calc-btn bg-slate-50 hover:bg-slate-100 border border-slate-200 font-bold py-3.5 sm:py-4 rounded-2xl text-xl">4</button>
+            <button onclick="basicAppend('5')" class="calc-btn bg-slate-50 hover:bg-slate-100 border border-slate-200 font-bold py-3.5 sm:py-4 rounded-2xl text-xl">5</button>
+            <button onclick="basicAppend('6')" class="calc-btn bg-slate-50 hover:bg-slate-100 border border-slate-200 font-bold py-3.5 sm:py-4 rounded-2xl text-xl">6</button>
+            <button onclick="basicAppend('-')" class="calc-btn bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-bold py-3.5 sm:py-4 rounded-2xl text-xl">
+                −
+            </button>
+
+            <!-- 4행: 1, 2, 3, 더하기 -->
+            <button onclick="basicAppend('1')" class="calc-btn bg-slate-50 hover:bg-slate-100 border border-slate-200 font-bold py-3.5 sm:py-4 rounded-2xl text-xl">1</button>
+            <button onclick="basicAppend('2')" class="calc-btn bg-slate-50 hover:bg-slate-100 border border-slate-200 font-bold py-3.5 sm:py-4 rounded-2xl text-xl">2</button>
+            <button onclick="basicAppend('3')" class="calc-btn bg-slate-50 hover:bg-slate-100 border border-slate-200 font-bold py-3.5 sm:py-4 rounded-2xl text-xl">3</button>
+            <button onclick="basicAppend('+')" class="calc-btn bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-bold py-3.5 sm:py-4 rounded-2xl text-xl">
+                +
+            </button>
+
+            <!-- 5행: 0, 소수점(.), 등호(=) -->
+            <button onclick="basicAppend('0')" class="calc-btn col-span-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 font-bold py-3.5 sm:py-4 rounded-2xl text-xl">0</button>
+            <button onclick="basicAppend('.')" class="calc-btn bg-slate-50 hover:bg-slate-100 border border-slate-200 font-bold py-3.5 sm:py-4 rounded-2xl text-xl">.</button>
+            <button onclick="basicCalculate()" class="calc-btn bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 sm:py-4 rounded-2xl text-xl shadow-md">
+                =
+            </button>
+        </div>
+
+    </main>
+
+    <!-- 하단 안내 문구 -->
+    <footer class="w-full max-w-md text-center mt-5 text-xs text-slate-500">
+        <p>PC에서는 키보드 숫자패드와 Enter, Backspace 키로도 바로 계산할 수 있어요!</p>
+    </footer>
+
+    <!-- 커스텀 알림 토스트 (alert 대체용) -->
+    <div id="toast-msg" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white px-5 py-3 rounded-full shadow-lg text-sm font-medium opacity-0 pointer-events-none transition-opacity duration-300 z-50">
+        메시지
+    </div>
+
+    <script>
+        /* ==========================================================================
+           일반 사칙연산 & 소수 계산기 핵심 로직
+           ========================================================================== */
+        let currentInput = '0';
+        let expression = '';
+        let shouldResetScreen = false;
+        let calcHistory = [];
+
+        const displayEl = document.getElementById('basic-display');
+        const exprEl = document.getElementById('basic-expression');
+
+        // 화면 하단 알림 메시지 표시 (alert() 미사용)
+        function showToast(message) {
+            const toast = document.getElementById('toast-msg');
+            toast.textContent = message;
+            toast.classList.remove('opacity-0');
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+            }, 2500);
+        }
+
+        // 자바스크립트 부동소수점 오차(예: 0.1 + 0.2 = 0.30000000000000004) 보정
+        function cleanFloat(num) {
+            return Math.round(num * 100000000) / 100000000;
+        }
+
+        // 액정 화면 업데이트
+        function updateBasicDisplay() {
+            displayEl.textContent = currentInput;
+            exprEl.textContent = expression;
+        }
+
+        // 숫자 및 연산자 입력 처리
+        function basicAppend(char) {
+            const operators = ['+', '-', '*', '/'];
+
+            if (operators.includes(char)) {
+                // 이미 수식이 있고 새 숫자를 입력한 상태라면 연속 계산 수행
+                if (expression !== '' && !shouldResetScreen) {
+                    basicCalculate(true);
+                }
+                expression = `${currentInput} ${char}`;
+                shouldResetScreen = true;
+            } else {
+                if (currentInput === '0' || shouldResetScreen) {
+                    currentInput = char === '.' ? '0.' : char;
+                    shouldResetScreen = false;
+                } else {
+                    // 소수점 중복 입력 방지
+                    if (char === '.' && currentInput.includes('.')) return;
+                    // 최대 15자리 제한
+                    if (currentInput.length >= 15) {
+                        showToast('숫자는 최대 15자리까지 입력할 수 있어요.');
+                        return;
+                    }
+                    currentInput += char;
+                }
+            }
+            updateBasicDisplay();
+        }
+
+        // 모두 지우기 (AC)
+        function basicClear() {
+            currentInput = '0';
+            expression = '';
+            shouldResetScreen = false;
+            updateBasicDisplay();
+        }
+
+        // 마지막 한 글자 지우기 (백스페이스)
+        function basicBackspace() {
+            if (shouldResetScreen) return;
+            if (currentInput.length > 1) {
+                currentInput = currentInput.slice(0, -1);
+            } else {
+                currentInput = '0';
+            }
+            updateBasicDisplay();
+        }
+
+        // 최종 결과 계산 (=)
+        function basicCalculate(isChaining = false) {
+            if (expression === '') return;
+
+            const parts = expression.split(' ');
+            const num1 = parseFloat(parts[0]);
+            const op = parts[1];
+            const num2 = parseFloat(currentInput);
+
+            if (isNaN(num1) || isNaN(num2)) return;
+
+            let result = 0;
+            let opSymbol = op;
+
+            switch (op) {
+                case '+':
+                    result = cleanFloat(num1 + num2);
+                    break;
+                case '-':
+                    result = cleanFloat(num1 - num2);
+                    break;
+                case '*':
+                    result = cleanFloat(num1 * num2);
+                    opSymbol = '×';
+                    break;
+                case '/':
+                    if (num2 === 0) {
+                        showToast('0으로는 나눌 수 없어요!');
+                        basicClear();
+                        return;
+                    }
+                    result = cleanFloat(num1 / num2);
+                    opSymbol = '÷';
+                    break;
+            }
+
+            // 계산 기록 저장
+            const fullRecord = `${num1} ${opSymbol} ${num2} = ${result}`;
+            addHistory(fullRecord);
+
+            if (!isChaining) {
+                expression = `${num1} ${opSymbol} ${num2} =`;
+            }
+            currentInput = String(result);
+            shouldResetScreen = true;
+            updateBasicDisplay();
+        }
+
+        // 계산 기록 관리 함수
+        function addHistory(record) {
+            calcHistory.unshift(record);
+            if (calcHistory.length > 10) calcHistory.pop();
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const listEl = document.getElementById('history-list');
+            if (calcHistory.length === 0) {
+                listEl.innerHTML = '<li class="text-slate-400 text-center py-2">아직 계산 기록이 없어요.</li>';
+                return;
+            }
+            listEl.innerHTML = calcHistory
+                .map(item => `<li class="py-1 px-2 bg-white rounded-lg border border-slate-100">${item}</li>`)
+                .join('');
+        }
+
+        function toggleHistory() {
+            document.getElementById('history-box').classList.toggle('hidden');
+        }
+
+        function clearHistory() {
+            calcHistory = [];
+            renderHistory();
+            showToast('계산 기록을 모두 지웠어요.');
+        }
+
+        // PC 키보드 입력 지원
+        document.addEventListener('keydown', (e) => {
+            if ((e.key >= '0' && e.key <= '9') || e.key === '.') {
+                basicAppend(e.key);
+            } else if (['+', '-', '*', '/'].includes(e.key)) {
+                basicAppend(e.key);
+            } else if (e.key === 'Enter' || e.key === '=') {
+                e.preventDefault();
+                basicCalculate();
+            } else if (e.key === 'Backspace') {
+                basicBackspace();
+            } else if (e.key === 'Escape') {
+                basicClear();
+            }
+        });
+    </script>
+</body>
+</html>
